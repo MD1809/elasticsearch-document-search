@@ -1,0 +1,124 @@
+version: '3.8'
+
+networks:
+  es-distributed-network:
+    driver: bridge
+
+services:
+  es-node01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: es_node01_container
+    restart: unless-stopped
+    environment:
+      - node.name=es-node01
+      - cluster.name=es-distributed-cluster
+      - discovery.seed_hosts=es-node02,es-node03
+      - cluster.initial_master_nodes=es-node01,es-node02,es-node03
+      - node.roles=master,data
+      - network.host=0.0.0.0
+      - bootstrap.memory_lock=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.monitoring.collection.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_node01_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    networks:
+      - es-distributed-network
+
+  es-node02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: es_node02_container
+    restart: unless-stopped
+    environment:
+      - node.name=es-node02
+      - cluster.name=es-distributed-cluster
+      - discovery.seed_hosts=es-node01,es-node03
+      - cluster.initial_master_nodes=es-node01,es-node02,es-node03
+      - node.roles=master,data
+      - network.host=0.0.0.0
+      - bootstrap.memory_lock=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.monitoring.collection.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9201:9200"
+    volumes:
+      - es_node02_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    networks:
+      - es-distributed-network
+
+  es-node03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: es_node03_container
+    restart: unless-stopped
+    environment:
+      - node.name=es-node03
+      - cluster.name=es-distributed-cluster
+      - discovery.seed_hosts=es-node01,es-node02
+      - cluster.initial_master_nodes=es-node01,es-node02,es-node03
+      - node.roles=master,data
+      - network.host=0.0.0.0
+      - bootstrap.memory_lock=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.monitoring.collection.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9202:9200"
+    volumes:
+      - es_node03_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    networks:
+      - es-distributed-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.10
+    container_name: kibana_container
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+      - ELASTICSEARCH_HOSTS=["http://es-node01:9200","http://es-node02:9200","http://es-node03:9200"]
+    ports:
+      - "5601:5601"
+    depends_on:
+      - es-node01
+      - es-node02
+      - es-node03
+    networks:
+      - es-distributed-network
+
+volumes:
+  es_node01_data:
+    driver: local
+  es_node02_data:
+    driver: local
+  es_node03_data:
+    driver: local
