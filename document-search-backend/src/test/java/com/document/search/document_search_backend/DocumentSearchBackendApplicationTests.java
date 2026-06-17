@@ -1,0 +1,13 @@
+package com.document.search.document_search_backend;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class DocumentSearchBackendApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
